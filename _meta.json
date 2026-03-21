@@ -1,0 +1,8 @@
+{
+  "name": "github-trending-intelligence",
+  "version": "1.0.0",
+  "description": "GitHub Trending Intelligence - 按 Star 增速排序的 GitHub 热门项目追踪工具",
+  "tags": ["github", "trending", "ai", "openclaw", "monitor"],
+  "author": "taizi",
+  "homepage": "https://github.com/taizi-agent/github-trending-intelligence"
+}

@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub Trending Intelligence — 发现下一个爆款项目</title>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #111118;
+      --border: #1e1e2e;
+      --accent: #7c3aed;
+      --accent2: #06b6d4;
+      --green: #10b981;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --red: #ef4444;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 100px 20px 60px;
+      background: linear-gradient(180deg, #0f0f1a 0%, var(--bg) 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(124,58,237,0.15) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(124,58,237,0.15);
+      border: 1px solid rgba(124,58,237,0.3);
+      color: #a78bfa;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      margin-bottom: 24px;
+    }
+    .hero h1 {
+      font-size: 48px;
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, #fff 0%, #a78bfa 50%, #06b6d4 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p {
+      font-size: 18px;
+      color: var(--muted);
+      max-width: 600px;
+      margin: 0 auto 40px;
+    }
+    .hero-actions {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 28px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #6d28d9);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(124,58,237,0.4);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 30px rgba(124,58,237,0.5);
+    }
+    .btn-outline {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-outline:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Demo */
+    .demo-section {
+      padding: 60px 20px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .demo-window {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .demo-bar {
+      background: #1a1a24;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .demo-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot-red { background: #ef4444; }
+    .dot-yellow { background: #f59e0b; }
+    .dot-green { background: #10b981; }
+    .demo-title {
+      margin-left: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .demo-content {
+      padding: 24px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 13px;
+      line-height: 1.8;
+      overflow-x: auto;
+    }
+    .rank { color: var(--accent); font-weight: 700; }
+    .stars { color: #f59e0b; }
+    .velocity { color: var(--green); }
+    .cat { color: var(--accent2); font-size: 12px; }
+    .url { color: var(--muted); font-size: 12px; }
+
+    /* Features */
+    .features {
+      padding: 80px 20px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .section-label {
+      text-align: center;
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .section-title {
+      text-align: center;
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 60px;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      transition: border-color 0.2s;
+    }
+    .feature-card:hover {
+      border-color: rgba(124,58,237,0.4);
+    }
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      background: rgba(124,58,237,0.15);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-bottom: 16px;
+    }
+    .feature-card h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .feature-card p {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    /* Comparison */
+    .comparison {
+      padding: 80px 20px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .comparison-table th {
+      background: #1a1a24;
+      padding: 16px 20px;
+      text-align: left;
+      font-size: 14px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+    .comparison-table td {
+      padding: 14px 20px;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .comparison-table tr:last-child td { border-bottom: none; }
+    .comparison-table .check { color: var(--green); font-weight: 700; }
+    .comparison-table .cross { color: var(--red); }
+    .comparison-table .highlight td {
+      background: rgba(124,58,237,0.05);
+    }
+
+    /* Pricing */
+    .pricing {
+      padding: 80px 20px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+      margin-top: 40px;
+    }
+    .price-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      text-align: center;
+      position: relative;
+    }
+    .price-card.popular {
+      border-color: var(--accent);
+      box-shadow: 0 0 40px rgba(124,58,237,0.2);
+    }
+    .price-card.popular::before {
+      content: '最受欢迎';
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, var(--accent), #6d28d9);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 16px;
+      border-radius: 20px;
+    }
+    .price-name {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .price-amount {
+      font-size: 36px;
+      font-weight: 800;
+      color: var(--accent);
+    }
+    .price-amount span {
+      font-size: 16px;
+      color: var(--muted);
+      font-weight: 400;
+    }
+    .price-desc {
+      color: var(--muted);
+      font-size: 13px;
+      margin: 8px 0 24px;
+    }
+    .price-features {
+      list-style: none;
+      text-align: left;
+      font-size: 14px;
+      margin-bottom: 28px;
+    }
+    .price-features li {
+      padding: 6px 0;
+      color: var(--muted);
+    }
+    .price-features li::before {
+      content: '✓ ';
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    /* CTA */
+    .cta-section {
+      padding: 100px 20px;
+      text-align: center;
+      background: linear-gradient(180deg, var(--bg) 0%, #0f0f1a 100%);
+    }
+    .cta-section h2 {
+      font-size: 40px;
+      font-weight: 800;
+      margin-bottom: 16px;
+    }
+    .cta-section p {
+      color: var(--muted);
+      font-size: 18px;
+      margin-bottom: 36px;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+      font-size: 13px;
+      border-top: 1px solid var(--border);
+    }
+
+    @media (max-width: 600px) {
+      .hero h1 { font-size: 32px; }
+      .hero p { font-size: 15px; }
+      .section-title { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-badge">🆕 发现 AI 赛道的下一个爆款</div>
+  <h1>GitHub Trending<br>Intelligence</h1>
+  <p>按 Star 增速排序的 GitHub 热门项目追踪工具，帮你发现真正在爆发的新项目，而非老项目霸榜。</p>
+  <div class="hero-actions">
+    <a href="#pricing" class="btn btn-primary">🚀 立即开始</a>
+    <a href="#demo" class="btn btn-outline">📊 查看示例</a>
+  </div>
+</section>
+
+<!-- Demo -->
+<section class="demo-section" id="demo">
+  <div class="demo-window">
+    <div class="demo-bar">
+      <div class="demo-dot dot-red"></div>
+      <div class="demo-dot dot-yellow"></div>
+      <div class="demo-dot dot-green"></div>
+      <span class="demo-title">github-trending-intelligence --top 10</span>
+    </div>
+    <div class="demo-content">
+<span class="rank">#1</span>  <span class="stars">⭐42.4k</span>  <span class="velocity">(3529⭐/天)</span>  karpathy/autoresearch
+      <span class="cat">🐍 Python | 🤖 AI/Agent</span>
+      <span class="url">🔗 https://github.com/karpathy/autoresearch</span>
+
+<span class="rank">#2</span>  <span class="stars">⭐9.0k</span>    <span class="velocity">(3007⭐/天)</span>  NVIDIA/NemoClaw
+      <span class="cat">🐟 OpenClaw生态</span>
+      <span class="url">🔗 https://github.com/NVIDIA/NemoClaw</span>
+
+<span class="rank">#3</span>  <span class="stars">⭐323k</span>   <span class="velocity">(2837⭐/天)</span>  openclaw/openclaw
+      <span class="cat">🐟 OpenClaw生态</span>
+      <span class="url">🔗 https://github.com/openclaw/openclaw</span>
+
+<span class="rank">#4</span>  <span class="stars">⭐6.3k</span>    <span class="velocity">(1581⭐/天)</span>  aiming-lab/AutoResearchClaw
+      <span class="cat">🐟 OpenClaw生态</span>
+      <span class="url">🔗 https://github.com/aiming-lab/AutoResearchClaw</span>
+
+<span class="rank">#5</span>  <span class="stars">⭐86k</span>     <span class="velocity">(1433⭐/天)</span>  affaan-m/everything-claude-code
+      <span class="cat">🤖 AI/Agent</span>
+      <span class="url">🔗 https://github.com/affaan-m/everything-claude-code</span>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="features" id="features">
+  <div class="section-label">核心功能</div>
+  <h2 class="section-title">为什么你需要这个工具？</h2>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">📈</div>
+      <h3>按增速排序</h3>
+      <p>传统 GitHub Trending 按总 Star 排序，新项目永远被老项目压着。增速排序让你第一时间发现爆发中的项目。</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🤖</div>
+      <h3>AI 指数评分</h3>
+      <p>自动评估每个项目的 AI 相关度，帮你过滤噪音，专注真正有价值的 AI 项目。</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📝</div>
+      <h3>中文项目介绍</h3>
+      <p>自动生成中文简介，降低阅读门槛，不需要你逐个点进去看英文描述。</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⏰</div>
+      <h3>定时推送</h3>
+      <p>每天自动抓取，最新数据直接推送到飞书，随时掌握赛道动态。</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🎯</div>
+      <h3>OpenClaw 生态追踪</h3>
+      <p>专门追踪 OpenClaw 生态项目，发现可以封装成 Skill 的机会。</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🛠️</div>
+      <h3>Skill 封装潜力评估</h3>
+      <p>自动评估项目是否适合做成 OpenClaw Skill，帮创作者找变现机会。</p>
+    </div>
+  </div>
+</section>
+
+<!-- Comparison -->
+<section class="comparison">
+  <div class="section-label">对比</div>
+  <h2 class="section-title">和普通 Trending 有什么不同？</h2>
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>功能</th>
+        <th>普通 GitHub Trending</th>
+        <th>Trending Intelligence</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>排序方式</td>
+        <td>总 Stars 数量</td>
+        <td>⭐ Stars / 天（增速）</td>
+      </tr>
+      <tr class="highlight">
+        <td>新项目发现</td>
+        <td class="cross">❌ 老项目霸榜</td>
+        <td class="check">✅ 新项目优先</td>
+      </tr>
+      <tr>
+        <td>AI 相关度筛选</td>
+        <td class="cross">❌ 无</td>
+        <td class="check">✅ AI 指数评分</td>
+      </tr>
+      <tr>
+        <td>中文介绍</td>
+        <td class="cross">❌ 无</td>
+        <td class="check">✅ 自动生成</td>
+      </tr>
+      <tr>
+        <td>飞书推送</td>
+        <td class="cross">❌ 无</td>
+        <td class="check">✅ 可配置</td>
+      </tr>
+      <tr>
+        <td>OpenClaw 生态追踪</td>
+        <td class="cross">❌ 无</td>
+        <td class="check">✅ 专属维度</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- Pricing -->
+<section class="pricing" id="pricing">
+  <div class="section-label">定价</div>
+  <h2 class="section-title">简单透明的定价</h2>
+  <div class="pricing-grid">
+    <div class="price-card">
+      <div class="price-name">Free</div>
+      <div class="price-amount">¥0<span>/月</span></div>
+      <div class="price-desc">适合个人探索</div>
+      <ul class="price-features">
+        <li>每天 1 次抓取</li>
+        <li>Top 20 项目</li>
+        <li>基础 AI 评分</li>
+        <li>Markdown 输出</li>
+      </ul>
+      <a href="#" class="btn btn-outline" style="width:100%;justify-content:center;">免费使用</a>
+    </div>
+    <div class="price-card popular">
+      <div class="price-name">Pro</div>
+      <div class="price-amount">¥15<span>/月</span></div>
+      <div class="price-desc">适合开发者和创作者</div>
+      <ul class="price-features">
+        <li>每天 3 次抓取</li>
+        <li>Top 50 项目</li>
+        <li>完整 AI/Skill/MCP 评分</li>
+        <li>中文项目介绍</li>
+        <li>飞书/钉钉推送</li>
+        <li>OpenClaw 生态专属维度</li>
+      </ul>
+      <a href="#" class="btn btn-primary" style="width:100%;justify-content:center;">立即订阅</a>
+    </div>
+    <div class="price-card">
+      <div class="price-name">Team</div>
+      <div class="price-amount">¥49<span>/月</span></div>
+      <div class="price-desc">适合团队和投资人</div>
+      <ul class="price-features">
+        <li>无限次数抓取</li>
+        <li>Top 200 项目</li>
+        <li>API 接口</li>
+        <li>自定义推送频道</li>
+        <li>多项目并行追踪</li>
+        <li>竞品监控对比</li>
+      </ul>
+      <a href="#" class="btn btn-outline" style="width:100%;justify-content:center;">联系销售</a>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <h2>早一步发现机会<br>领先一个身位</h2>
+  <p>GitHub 上每天都有新项目爆发，你看到的只是总榜，错过了真正的机会。</p>
+  <div class="hero-actions">
+    <a href="#pricing" class="btn btn-primary">🚀 立即开始</a>
+    <a href="https://github.com/wbbk/github-trending-intelligence" class="btn btn-outline">⭐ Star on GitHub</a>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <p>© 2026 GitHub Trending Intelligence · Open Source · Built with OpenClaw</p>
+</footer>
+
+</body>
+</html>
