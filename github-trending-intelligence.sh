@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-GitHub Trending Intelligence v7 - 极速版
-优化：去全量PR查询，改为轻量搜索+精准PR补充top N
+GitHub Trending Intelligence v8 - 智能分类版
+优化：举一反三模式识别，自动识别Hermes类自改进Agent
+新增：Self-Improving Agent分类，描述内容智能匹配
 """
 import argparse, json, os, sys, time, math, urllib.request
 from datetime import datetime, timezone
@@ -69,11 +70,11 @@ def light_analyze(repo):
     cs = min(fr*100, 40) + min(repo.get('open_issues_count',0)*2, 20) + min(max(1,repo.get('open_issues_count',0)//2)*3,20) + (5 if age<7 else 10 if age<30 else 15 if age<180 else 20)
     nm = repo.get('full_name','').lower()
     dc = (nm + ' ' + (repo.get('description') or '') + ' ' + ' '.join(repo.get('topics',[])) + ' ' + (repo.get('language') or '')).lower()
-    ai = sum(1 for k in ['agent','llm','gpt',' ai ','claude','openai','langchain','chatbot','assistant','rag','vector','embedding','agentic','autonomous','multi-agent','swarm','crew','mcp','ollama','nvidia','claw','openclaw','anthropic'] if k in dc)
+    ai = sum(1 for k in ['agent','llm','gpt',' ai ','claude','openai','langchain','chatbot','assistant','rag','vector','embedding','agentic','autonomous','multi-agent','swarm','crew','mcp','ollama','nvidia','claw','openclaw','anthropic','hermes','nous','openhands','browser-use','dify','computer use','self-improving','skill creation','persistent memory','cross-session'] if k in dc)
     if 'openclaw' in nm or 'claw' in nm: ai += 3
     mcp = sum(1 for k in ['mcp','tool','plugin','integration','connector','browser'] if k in dc)
     sk = sum(1 for k in ['cli','tool','utility','wrapper','sdk','library','bot','skill','prompt'] if k in dc)
-    cat = 'OpenClaw' if 'openclaw' in nm or ('claw' in nm and ai>=2) else 'AI/Agent' if ai>=5 else 'MCP/Tools' if ai>=2 and mcp>=1 else 'Tool/Skill' if sk>=3 else (((repo.get('topics') or [''])[0] or 'Other'))
+    cat = 'OpenClaw' if 'openclaw' in nm or ('claw' in nm and ai>=2) else 'AI/Agent' if ai>=5 else 'MCP/Tools' if ai>=2 and mcp>=1 else 'Self-Improving Agent' if any(k in dc for k in ['self-improving','self improving','hermes','nous','skill self','learns from']) else 'Tool/Skill' if sk>=3 else (((repo.get('topics') or [''])[0] or 'Other'))
     comprehensive = vr * (min(cs,100)/100) * (1+ai*0.05) * (1+math.log10(max(s,1))*0.1)
     return {'name': repo['full_name'], 'stars': s, 'forks': f, 'velocity': round(vr,2), 'cred_v4': min(cs,100), 'pr_cred': 0, 'total_cred': round(min(cs,100)*0.8,1),
             'merged_prs': 0, 'recent_prs': 0, 'pr_activity': 0, 'comprehensive': round(comprehensive,2),
@@ -94,6 +95,8 @@ def enrich(r):
 
 def gi(r):
     n, d, c = r['name'].lower(), (r.get('description') or '').lower(), r.get('category','')
+    t = ' '.join(r.get('topics', [])).lower()
+    # OpenClaw生态（精确匹配）
     if 'openclaw' in n or c=='OpenClaw':
         if 'nemo' in n: return "NVIDIA推出的OpenClaw官方插件，提供安全的OpenClaw安装体验，支持一键部署和配置管理。"
         elif 'autor' in n: return "基于OpenClaw的全自主科研AI Agent，能够自动规划和执行复杂研究任务。"
@@ -103,11 +106,30 @@ def gi(r):
         elif 'chatgpt-on-wechat' in n: return "让ChatGPT/Claude等AI接入微信的开源项目，支持多模型切换和群聊自动回复。"
         elif 'astron' in n or 'langbot' in n: return "功能丰富的AI机器人平台，支持多种AI模型接入和插件扩展。"
         else: return f"OpenClaw生态项目，{r.get('description','')[:60] if r.get('description') else '提供OpenClaw相关功能扩展。'}"
+    # 自改进/学习循环Agent（ Hermes同类）
+    if 'hermes' in n: return "NousResearch推出的自改进AI Agent，内置学习循环可从经验中自主创建Skills，支持OpenClaw迁移，84k Stars热门项目。"
+    if 'nous' in n and ('agent' in n or 'hermes' in n or 'research' in n): return "NousResearch推出的自改进AI Agent项目，具有内置学习循环和自主技能创建能力。"
+    if any(k in d+t for k in ['self-improving','self improving','learns from experience','autonomous skill creation','skill self-improvement']):
+        return "自改进AI Agent，内置学习循环能从经验中自主创建和改进Skills，核心技术为长期记忆+技能进化。"
+    # 通用Agent模式识别
     if 'karpathy' in n: return "Karpathy推出的AI科研Agent，能够自主规划和执行研究实验，加速科学研究进程。"
     if 'browser-use' in n: return "让AI Agent控制浏览器的工具，能够自动化操作网页任务。"
     if 'dify' in n: return "开源LLM应用开发平台，支持可视化编排AI工作流，零代码构建AI应用。"
     if 'openhands' in n: return "开源AI Agent系统，能够自主操作电脑完成复杂软件工程任务。"
     if 'langchain' in n: return "LangChain的Python库，为LLM应用开发提供组件化的工具链支持。"
+    # 基于描述内容的通用Agent分类
+    if any(k in d+t for k in ['multi-agent','multi agent','crew','swarm','agent swarm']):
+        return "多Agent协作系统，多个AI Agent分工合作完成复杂任务，属于群体智能方向。"
+    if any(k in d+t for k in ['autonomous','self-directed','self-directed agent']):
+        return "自主决策AI Agent，能够独立规划路径和执行复杂任务，无需频繁人工干预。"
+    if any(k in d+t for k in ['computer use','computer control','browser automation','web automation']):
+        return "AI Agent控制电脑/浏览器工具，自动化操作网页和桌面应用，替代人工完成重复性Web任务。"
+    if any(k in d+t for k in ['memory','long-term','persistent','cross-session','personalization']):
+        return "具有长期记忆能力的AI Agent，支持跨会话持久化知识和个性化用户建模。"
+    if any(k in d+t for k in ['mcp','model context protocol','tool calling','function calling']):
+        return "基于MCP(Model Context Protocol)的AI工具调用框架，支持标准化工具扩展和能力连接。"
+    if any(k in d+t for k in ['telegram','discord','slack','whatsapp','messaging gateway','multi-platform']):
+        return "多平台消息网关AI Agent，支持Telegram/Discord/Slack等消息平台统一接入和管理。"
     return f"{r.get('description','')[:80] if r.get('description') else '开源AI工具项目。'}"
 
 def analyze(repos, prev=None):
